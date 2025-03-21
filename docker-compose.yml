@@ -1,0 +1,53 @@
+version: '3'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: carsales-app
+    container_name: carsales-app
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - carsales-network
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: carsales-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-carsales}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-password}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-password}
+      MYSQL_USER: ${DB_USERNAME:-carsales}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - carsales-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: carsales-nginx
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - carsales-network
+    depends_on:
+      - app
+
+networks:
+  carsales-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
